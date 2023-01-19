@@ -1,0 +1,50 @@
+services:
+
+  # Core services
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - ./config/searx:/etc/searxng
+    environment:
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+      - SEARXNG_DEBUG=1
+
+  # Debugging service
+
+  whoami:
+    image: traefik/whoami:latest
+    networks:
+      - traefik-public
+
+  # Traefik routing
+
+  traefik:
+    image: traefik:latest
+    command:
+      - --api
+      - --docker
+      - --docker.network=traefik-public
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefik-public
+
+  # Authentification
+
+  authelia:
+    image: authelia:latest
+    command: server --config /config/configuration.yml
+    ports:
+      - 9091:9091
+    volumes:
+      - ./authelia:/config
+    networks:
+      - traefik-public
